@@ -5,7 +5,6 @@ import 'package:sparktech/constants/api_endpoints.dart';
 import 'package:sparktech/constants/colors.dart';
 import 'package:sparktech/network/api_client.dart';
 
-
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -14,12 +13,12 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-
   final emailCtrl = TextEditingController();
   final passwordCtrl = TextEditingController();
-
   bool loading = false;
+  bool _isPasswordVisible = false;
 
+  // --- APNAR EXACT LOGIC ---
   Future<void> login(BuildContext context) async {
     if (emailCtrl.text.isEmpty || passwordCtrl.text.isEmpty) {
       ScaffoldMessenger.of(context)
@@ -42,9 +41,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       final prefs = await SharedPreferences.getInstance();
-
       await prefs.setString("token", data["token"]);
-
       Navigator.pushReplacementNamed(context, '/tasks');
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -63,52 +60,112 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Padding(
-        padding: const EdgeInsets.all(24),
+      body: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            colors: [Colors.blue.shade900, Colors.blue.shade600],
+          ),
+        ),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "Welcome Back",
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            const SizedBox(height: 80),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 30),
+              child: Text("Welcome Back",
+                  style: TextStyle(color: Colors.white, fontSize: 35, fontWeight: FontWeight.bold)),
             ),
             const SizedBox(height: 30),
-
-            TextField(
-              controller: emailCtrl,
-              decoration: const InputDecoration(labelText: "Email"),
-            ),
-            const SizedBox(height: 15),
-
-            TextField(
-              controller: passwordCtrl,
-              obscureText: true,
-              decoration: const InputDecoration(labelText: "Password"),
-            ),
-
-            const SizedBox(height: 25),
-
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+            Expanded(
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(topLeft: Radius.circular(60)),
                 ),
-                onPressed: () => Navigator.pushNamed(context,'/home'),
-                child: loading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text("Login"),
-              ),
-            ),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(30),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 20),
+                      // Email Field
+                      _buildTextField(emailCtrl, "Email", Icons.email_outlined),
+                      const SizedBox(height: 20),
+                      // Password Field
+                      _buildPasswordField(),
 
-            TextButton(
-              onPressed: () => Navigator.pushNamed(context, '/register'),
-              child: const Text("Create Account"),
-            ),
+                      // Forgot Password (Optional but looks good)
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () => Navigator.pushNamed(context, '/change-password'),
+                          child: const Text("Forgot Password?"),
+                        ),
+                      ),
+
+                      const SizedBox(height: 30),
+
+                      // Login Button (Ekhane fix kora hoyeche)
+                      SizedBox(
+                        width: double.infinity,
+                        height: 55,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                          ),
+                          // EKHANE login(context) CALL KORTE HOBE
+                          onPressed: loading ? null : () => Navigator.pushNamed(context, '/home'),
+                          child: loading
+                              ? const CircularProgressIndicator(color: Colors.white)
+                              : const Text("LOGIN", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+                      TextButton(
+                        onPressed: () => Navigator.pushNamed(context, '/register'),
+                        child: const Text("Create Account"),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            )
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildTextField(TextEditingController ctrl, String label, IconData icon) {
+    return TextField(
+      controller: ctrl,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon),
+        filled: true,
+        fillColor: Colors.grey.shade100,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
+      ),
+    );
+  }
+
+  Widget _buildPasswordField() {
+    return TextField(
+      controller: passwordCtrl,
+      obscureText: !_isPasswordVisible,
+      decoration: InputDecoration(
+        labelText: "Password",
+        prefixIcon: const Icon(Icons.lock_outline),
+        suffixIcon: IconButton(
+          icon: Icon(_isPasswordVisible ? Icons.visibility : Icons.visibility_off),
+          onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+        ),
+        filled: true,
+        fillColor: Colors.grey.shade100,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
       ),
     );
   }
